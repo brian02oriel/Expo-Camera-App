@@ -3,6 +3,8 @@ import { StyleSheet, Text, View, Switch, TouchableOpacity, Image } from "react-n
 import * as Permissions from 'expo-permissions'
 import { Camera } from 'expo-camera'
 
+const axios = require('axios');
+
 initialState = {
   switchValue: false,
   hasCameraPermission: null,
@@ -35,7 +37,7 @@ export default class App extends React.Component {
     if (this.camera) {
       let photo = await this.camera.takePictureAsync();
       if (photo) {
-        console.log("photo: ", photo)
+        //console.log("photo: ", photo)
         this.setState({ imageuri: photo.uri });
       }
     }
@@ -47,7 +49,16 @@ export default class App extends React.Component {
 
 
   upload = () => {
-    const file = {
+    console.log("sending query...")
+    axios.get('http://10.0.2.15:5000/')
+  .then(function (response) {
+    console.log(response);
+  })
+  .catch(function (error) {
+    console.log("error: ", error);
+  })
+
+   /*  const file = {
       uri: this.state.imageuri,
       name: `${new Date().getTime()}.jpg`,
       type: "image/jpeg"
@@ -77,7 +88,7 @@ export default class App extends React.Component {
       })
       .catch(error => {
         console.log(error);
-      });
+      }); */
   };
 
   render() {
@@ -180,6 +191,7 @@ export default class App extends React.Component {
                 <View style={styles.captureButtonView}>
                   <TouchableOpacity
                     style={styles.cameraButtons}
+                    onPress={this.upload}
                   >
                     <Text
                       style={{ fontSize: 18, marginBottom: 10, color: "white" }}
