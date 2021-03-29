@@ -50,7 +50,7 @@ export default class App extends React.Component {
 
   upload = () => {
     console.log("sending query...")
-    axios.get('http://10.0.2.15:5000/')
+    axios.get('http://3.135.206.233:5000/')
   .then(function (response) {
     console.log(response);
   })
