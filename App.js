@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View, Switch, TouchableOpacity, Image } from "react-native";
 import * as Permissions from 'expo-permissions'
+import * as FileSystem from 'expo-file-system'
 import { Camera } from 'expo-camera'
 
 const axios = require('axios');
@@ -48,14 +49,24 @@ export default class App extends React.Component {
   }
 
 
-  upload = () => {
-    console.log("sending query...")
-    axios.get('http://3.135.206.233:5000/')
-  .then(function (response) {
-    console.log(response);
-  })
-  .catch(function (error) {
-    console.log("error: ", error);
+  upload = async () => {
+    let imageBase64 = await FileSystem.readAsStringAsync(this.state.imageuri, {encoding: FileSystem.EncodingType.Base64})
+    let uploadData = new FormData()
+    uploadData.append('submit', 'ok')
+    uploadData.append('file', {
+      type: 'image/jpg',
+      uri: this.state.imageuri,
+      base64: imageBase64,
+      name: 'image_from_app',
+    })
+
+    axios.post('http://3.135.206.233:5000/api/classifier', 
+      { img: uploadData })
+      .then(function (response) {
+        console.log(response);
+      })
+      .catch(function (error) {
+        console.log("error: ", error);
   })
 
    /*  const file = {
