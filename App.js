@@ -1,5 +1,5 @@
-import React from "react";
-import { StyleSheet, Text, View, Switch, TouchableOpacity, Image } from "react-native";
+import React, { Fragment } from "react";
+import {ActivityIndicator,  StyleSheet, Text, View, Switch, TouchableOpacity, Image } from "react-native";
 import * as Permissions from 'expo-permissions'
 import * as FileSystem from 'expo-file-system'
 import { Camera } from 'expo-camera'
@@ -7,19 +7,30 @@ import { Camera } from 'expo-camera'
 const axios = require('axios');
 
 initialState = {
-  switchValue: false,
+  switchValue: true,
   hasCameraPermission: null,
   type: Camera.Constants.Type.back,
   imageuri: "",
-  url: ""
+  url: "",
+  loading: false,
+  res: {}
 }
 export default class App extends React.Component {
   state = {
    ...initialState
   };
 
+  groups = {
+    "4": "Etapa 1",
+    "0": "Etapa 2",
+    "2": "Etapa 3",
+    "3": "Etapa 5",
+    "1": "Etapa 4",
+  }
+
   async componentDidMount() {
     const { status } = await Permissions.askAsync(Permissions.CAMERA);
+    console.log(status)
     this.setState({ hasCameraPermission: status === "granted" });
   }
 
@@ -44,62 +55,25 @@ export default class App extends React.Component {
     }
   };
 
-  clearData = async () => {
-    this.setState({ imageuri: "" });
+  clearData = async () => {                                         
+    this.setState({ imageuri: "", res: {} });
   }
 
 
   upload = async () => {
+    this.setState({loading: true})
     let imageBase64 = await FileSystem.readAsStringAsync(this.state.imageuri, {encoding: FileSystem.EncodingType.Base64})
-    let uploadData = new FormData()
-    uploadData.append('submit', 'ok')
-    uploadData.append('file', {
-      type: 'image/jpg',
-      uri: this.state.imageuri,
-      base64: imageBase64,
-      name: 'image_from_app',
-    })
-
-    axios.post('http://3.135.206.233:5000/api/classifier', 
-      { img: uploadData })
-      .then(function (response) {
-        console.log(response);
+    axios.post('http://192.168.0.3:5000/api/classifier', 
+      { base64                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        : imageBase64 })
+      .then((response)=> {
+        console.log(response.data);
+        this.setState({res: response.data})
+        this.setState({loading: false})
       })
-      .catch(function (error) {
+      .catch((error)=>{
         console.log("error: ", error);
-  })
-
-   /*  const file = {
-      uri: this.state.imageuri,
-      name: `${new Date().getTime()}.jpg`,
-      type: "image/jpeg"
-    };
-    const options = {
-      keyPrefix: "ts/",
-      bucket: "..name..",
-      region: "eu-west-1",
-      accessKey: "..acesskey..",
-      secretKey: "..secretkey..",
-      successActionStatus: 201
-    };
-    return RNS3.put(file, options)
-      .then(response => {
-        if (response.status !== 201)
-          throw new Error("Failed to upload image to S3");
-        else {
-          console.log(
-            "Successfully uploaded image to s3. s3 bucket url: ",
-            response.body.postResponse.location
-          );
-          this.setState({
-            url: response.body.postResponse.location,
-            switchValue: false
-          });
-        }
-      })
-      .catch(error => {
-        console.log(error);
-      }); */
+        this.setState({loading: false})
+    })
   };
 
   render() {
@@ -115,18 +89,8 @@ export default class App extends React.Component {
     } else {
       return (
         <View style={styles.container}>
-          <View style={styles.switchview}>
-            <Text>Show camera</Text>
-            <Switch
-              onValueChange={value => {
-                this.setState({ switchValue: value });
-              }}
-              value={this.state.switchValue}
-              style={styles.switch}
-            />
-          </View>
           {this.state.switchValue ? (
-            <View style={styles.cameraview}>
+            <View style={styles.cameraView}>
               {this.state.imageuri != "" ? (
                 <Image
                   source={{
@@ -143,17 +107,13 @@ export default class App extends React.Component {
                     this.camera = ref;
                   }}
                 >
-                  <View style={styles.camerabuttonview}>
+                  <View style={styles.onScreenCameraButtonView}>
                     <TouchableOpacity
-                      style={styles.cameraButtons}
+                      style={styles.onScreenCameraButtons}
                       onPress={this.cameraChange}
                     >
                       <Text
-                        style={{
-                          fontSize: 18,
-                          marginBottom: 10,
-                          color: "white"
-                        }}
+                        style={styles.onScreenButtonText}
                       >
                         Flip
                       </Text>
@@ -163,15 +123,35 @@ export default class App extends React.Component {
               )}
             </View>
           ) : (
-            <View style={styles.cameraview}>
+            <View style={styles.cameraView}>
               {this.state.url != "" ? (
                 <Text>Uploaded url : {this.state.url}</Text>
               ) : null}
               <Text>Camera off</Text>
             </View>
           )}
-          {this.state.switchValue ? (
-            <View style={styles.buttonsView}>
+            <Fragment>
+              {
+              Object.keys(this.state.res).length > 0 ? (
+                <View style={styles.resultsView}>
+                  <Text style={styles.resultText}> { this.groups[this.state.res["group"]] }</Text>
+                  <Text style={styles.resultText}> - </Text>
+                  <Text style={styles.resultText}> Días restantes: { this.state.res["days_lower"] } - { this.state.res["days_higher"] }  </Text>
+                </View>
+
+              ) : (
+                <Fragment>
+                  {
+                    this.state.loading &&
+                    <View style={styles.resultsLoaderView}>
+                        <ActivityIndicator size="large" color="#FFF" />
+                    </View> 
+                  }
+                      
+                </Fragment>
+              )
+              }
+              <View style={styles.buttonsView}>
               {this.state.imageuri == "" ? (
                 <View style={styles.captureButtonView}>
                   <TouchableOpacity
@@ -179,7 +159,7 @@ export default class App extends React.Component {
                     onPress={this.snap}
                   >
                     <Text
-                      style={{ fontSize: 18, marginBottom: 10, color: "white" }}
+                      style={styles.buttonText}
                     >
                       Capture
                     </Text>
@@ -187,25 +167,25 @@ export default class App extends React.Component {
                 </View>
               ) : 
               <View style={styles.postCaptureView}>
-                <View style={styles.captureButtonView}>
+                <View style={styles.postCaptureButtonView}>
                   <TouchableOpacity
-                    style={styles.cameraButtons}
+                    style={styles.postCameraButtons}
                     onPress={this.clearData}
                   >
                     <Text
-                      style={{ fontSize: 18, marginBottom: 10, color: "white" }}
+                      style={styles.buttonText}
                     >
                       Take Another
                     </Text>
                   </TouchableOpacity>
                 </View>
-                <View style={styles.captureButtonView}>
+                <View style={styles.postCaptureButtonView}>
                   <TouchableOpacity
-                    style={styles.cameraButtons}
+                    style={styles.postCameraButtons}
                     onPress={this.upload}
                   >
                     <Text
-                      style={{ fontSize: 18, marginBottom: 10, color: "white" }}
+                      style={styles.buttonText}
                     >
                       Upload
                     </Text>
@@ -215,7 +195,7 @@ export default class App extends React.Component {
               }
 
             </View>
-          ) : null}
+            </Fragment>
         </View>
       );
     }
@@ -224,13 +204,13 @@ export default class App extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1dd1a1",
+    backgroundColor: "#25283d",
     alignItems: "center",
     justifyContent: "flex-start"
   },
   switchview: {
     marginTop: 50,
-    backgroundColor: "white",
+    backgroundColor: "#FFF",
     padding: 10,
     alignItems: "center",
     borderRadius: 5,
@@ -239,49 +219,117 @@ const styles = StyleSheet.create({
   switch: {
     padding: 5
   },
-  cameraview: {
-    height: 400,
-    width: 300,
-    backgroundColor: "white",
-    borderRadius: 5,
+  cameraView: {
+    marginTop: 50,
+    height: 550,
+    width: 350,
+    backgroundColor: "#000",
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
     justifyContent: "center",
     alignItems: "center"
   },
   camera: {
-    height: "95%",
-    width: "95%",
-    backgroundColor: "white",
+    height: 550,
+    width: 350,
     borderRadius: 5,
     justifyContent: "center",
     alignItems: "center"
   },
-  camerabuttonview: {
+  resultsView:{
+    width: 350,
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: "#FFF",
+    borderColor: "#FFF",
+    borderWidth: 2,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5
+  },
+  resultText: {
+    fontSize: 20,
+    padding: 5,
+    color: "#FFF"
+  },
+  resultsLoaderView:{
+    width: 350,
+    alignItems: 'center',
+    justifyContent: 'center'
+
+  },
+  cameraButtonView: {
     height: "100%",
     backgroundColor: "transparent"
   },
   cameraButtons: {
-    borderColor: "#fff",
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: "#FFF",
+    borderColor: "#FFF",
     borderWidth: 2,
     padding: 10,
     borderRadius: 5,
-    margin: 5
+    width: 100,
+  },
+  
+  buttonText: {
+    fontSize: 18,
+    color: "#25283d",
+  },
+  onScreenCameraButtonView:{
+    height: "100%",
+    backgroundColor: "transparent"
+  },
+  onScreenCameraButtons: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderColor: "#FFF",
+    borderWidth: 2,
+    padding: 10,
+    borderRadius: 5,
+    width: 55,
+    height: 75,
+  },
+  onScreenButtonText:{
+    fontSize: 18,
+    color: "#FFF",
   },
   captureButtonView: {
-    height: 200
-  },
-  buttonsView: {
     height: 200,
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "center"
+    alignItems: 'center',
   },
   postCaptureView:{
     flexDirection: "row",
-    justifyContent: "center"
+    justifyContent: "center",
+    width: "100%",
+  },
+  postCaptureButtonView: {
+    width: '50%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  postCameraButtons:{
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: "#FFF",
+    borderColor: "#FFF",
+    borderWidth: 2,
+    borderRadius: 5,
+    height: 50,
+    width: "90%",
+  },
+  buttonsView: {
+    marginTop: 10,
+    height: 100,
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "center",
   },
   uploadedImage: {
-    height: "90%",
-    width: "90%",
+    height: 500,
+    width: 350,
     padding: 10
   }
 });
