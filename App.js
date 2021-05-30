@@ -24,8 +24,9 @@ export default class App extends React.Component {
     "4": "Etapa 1",
     "0": "Etapa 2",
     "2": "Etapa 3",
-    "3": "Etapa 5",
-    "1": "Etapa 4",
+    "3": "Etapa 4",
+    "1": "Etapa 5",
+    
   }
 
   async componentDidMount() {
@@ -63,7 +64,7 @@ export default class App extends React.Component {
   upload = async () => {
     this.setState({loading: true})
     let imageBase64 = await FileSystem.readAsStringAsync(this.state.imageuri, {encoding: FileSystem.EncodingType.Base64})
-    axios.post('http://192.168.0.3:5000/api/classifier', 
+    axios.post('http://192.168.0.12:5000/api/classifier', 
       { base64                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        : imageBase64 })
       .then((response)=> {
         console.log(response.data);
@@ -83,7 +84,7 @@ export default class App extends React.Component {
     } else if (hasCameraPermission === false) {
       return (
         <View>
-          <Text>No access to camera</Text>
+          <Text>No cuenta con acceso a la cámara</Text>
         </View>
       );
     } else {
@@ -127,7 +128,7 @@ export default class App extends React.Component {
               {this.state.url != "" ? (
                 <Text>Uploaded url : {this.state.url}</Text>
               ) : null}
-              <Text>Camera off</Text>
+              <Text>Cámara inactiva </Text>
             </View>
           )}
             <Fragment>
@@ -136,7 +137,7 @@ export default class App extends React.Component {
                 <View style={styles.resultsView}>
                   <Text style={styles.resultText}> { this.groups[this.state.res["group"]] }</Text>
                   <Text style={styles.resultText}> - </Text>
-                  <Text style={styles.resultText}> Días restantes: { this.state.res["days_lower"] } - { this.state.res["days_higher"] }  </Text>
+                  <Text style={styles.resultText}> Días restantes: { this.state.res["days_lower"] === this.state.res["days_higher"] || Number(this.state.res["days_lower"]) === 0 ? this.state.res["days_higher"] : `${this.state.res["days_lower"]} - ${this.state.res["days_higher"]}` }  </Text>
                 </View>
 
               ) : (
@@ -161,7 +162,7 @@ export default class App extends React.Component {
                     <Text
                       style={styles.buttonText}
                     >
-                      Capture
+                      Capturar
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -175,7 +176,7 @@ export default class App extends React.Component {
                     <Text
                       style={styles.buttonText}
                     >
-                      Take Another
+                      Capturar
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -187,7 +188,7 @@ export default class App extends React.Component {
                     <Text
                       style={styles.buttonText}
                     >
-                      Upload
+                      Cargar
                     </Text>
                   </TouchableOpacity>
                 </View> 
@@ -297,8 +298,9 @@ const styles = StyleSheet.create({
     color: "#FFF",
   },
   captureButtonView: {
-    height: 200,
+    height: 100,
     alignItems: 'center',
+    justifyContent: 'center'
   },
   postCaptureView:{
     flexDirection: "row",
@@ -321,7 +323,6 @@ const styles = StyleSheet.create({
     width: "90%",
   },
   buttonsView: {
-    marginTop: 10,
     height: 100,
     width: "100%",
     flexDirection: "row",
